@@ -18,7 +18,7 @@ class MufasaMapper:
     def __init__(self, root):
         self.root = root
         self.root.title("MUFASA - Peptide Automation Engine")
-        self.root.geometry("1000x600")
+        self.root.geometry("1000x650")
 
         # --- UI LAYOUT ---
         main_frame = tk.Frame(root, padx=10, pady=10)
@@ -38,6 +38,13 @@ class MufasaMapper:
         self.pep_text = tk.Text(right_frame, wrap="none", font=("Courier New", 10))
         self.pep_text.pack(expand=True, fill="both")
 
+        # Options Panel
+        options_frame = tk.Frame(root, padx=10)
+        options_frame.pack(fill="x")
+        self.reverse_mode = tk.BooleanVar(value=False)
+        tk.Checkbutton(options_frame, text="Reverse Mode (Highlight missing regions instead of mapped peptides)", 
+                       variable=self.reverse_mode, font=("Arial", 10, "bold"), fg="#d9534f").pack(side="left", pady=5)
+
         # Bottom Button
         btn_frame = tk.Frame(root, pady=10)
         btn_frame.pack(fill="x")
@@ -50,27 +57,18 @@ class MufasaMapper:
 
     # ---------- PHASE 1: SANITIZATION LAYER ----------
     def clean_peptide(self, raw_pep):
-        """Strips PTM brackets and cleavage dots (e.g., K.A[+80]SDF.R -> ASDF)"""
         pep = raw_pep.strip()
         if not pep: return ""
-        
-        # If it has dots (MaxQuant/PEAKS style), extract the middle part
         match = re.search(r"\.(.*?)\.", pep)
         if match:
             pep = match.group(1)
-            
-        # Strip everything that is not an alphabet letter (removes numbers, brackets)
         pep = re.sub(r'[^a-zA-Z]', '', pep)
         return pep.upper()
 
     def clean_sequence(self, raw_seq):
-        """Removes fasta headers, spaces, and line breaks."""
-        # Remove FASTA header if it exists
         lines = raw_seq.split('\n')
         clean_lines = [line for line in lines if not line.startswith('>')]
         clean_str = "".join(clean_lines)
-        
-        # Remove all whitespace/hidden characters
         clean_str = re.sub(r'\s+', '', clean_str)
         return clean_str.upper()
 
@@ -84,38 +82,37 @@ class MufasaMapper:
             messagebox.showwarning("Empty Input", "Please provide a parent sequence.")
             return
 
-        # Clean peptides and remove empty ones
         peptides = list(set(filter(None, [self.clean_peptide(p) for p in raw_peps])))
-        
         if not peptides:
             messagebox.showwarning("Empty Input", "Please provide at least one peptide.")
             return
 
-        # --- MULTI-MAPPING ALGORITHM ---
-        # Create an array to hold the color of every single character
         char_colors = [None] * len(sequence)
         unmapped = []
-        color_map = {}
 
+        # Standard Mapping
         for idx, pep in enumerate(peptides):
-            # Assign color
             color = self.palette[idx % len(self.palette)]
-            color_map[pep] = color
-
             start = 0
             found = False
-            # Find ALL occurrences, not just the first one
             while True:
                 start = sequence.find(pep, start)
                 if start == -1: break
                 found = True
-                # Paint the array
                 for i in range(start, start + len(pep)):
                     char_colors[i] = color
-                start += 1 # Advance by 1 to catch overlapping duplicates
-
+                start += 1
             if not found:
                 unmapped.append(pep)
+
+        # --- THE REVERSE LOGIC FLIP ---
+        if self.reverse_mode.get():
+            missing_color = "#FF4444"  # Strong red to flag missing sequences
+            for i in range(len(char_colors)):
+                if char_colors[i] is not None:
+                    char_colors[i] = None  # Strip the mapping color
+                else:
+                    char_colors[i] = missing_color  # Color the empty gaps
 
         self.open_preview_window(sequence, char_colors, unmapped)
 
@@ -124,24 +121,18 @@ class MufasaMapper:
         preview_win.title("Preview & Export")
         preview_win.geometry("900x700")
 
-        # Orphan Report
         if unmapped:
             warning_text = f"⚠️ WARNING: {len(unmapped)} peptides could not be mapped to the parent sequence."
             tk.Label(preview_win, text=warning_text, fg="red", font=("Arial", 10, "bold")).pack(pady=5)
-            # Print to terminal for debugging just in case
-            print("Unmapped:", unmapped)
 
-        # The Read-Only Preview Area
         preview_text = tk.Text(preview_win, wrap="none", font=("Courier New", 12))
         preview_text.pack(expand=True, fill="both", padx=10, pady=5)
 
-        # --- CLUSTAL WRAP ENGINE (60 chars per line) ---
         chunk_size = 60
         for i in range(0, len(sequence), chunk_size):
             chunk_seq = sequence[i:i+chunk_size]
             chunk_colors = char_colors[i:i+chunk_size]
 
-            # Group characters by color to build tags efficiently
             current_str = chunk_seq[0]
             current_color = chunk_colors[0]
 
@@ -153,25 +144,20 @@ class MufasaMapper:
                     current_str = chunk_seq[j]
                     current_color = chunk_colors[j]
             
-            # Insert the final piece of the chunk
             self._insert_colored(preview_text, current_str, current_color)
-            preview_text.insert(tk.END, "\n") # Force the Clustal break
+            preview_text.insert(tk.END, "\n")
 
-        # Lock the text box so user can't break the alignment
         preview_text.config(state=tk.DISABLED)
 
-        # Action Bar
         btn_frame = tk.Frame(preview_win, pady=10)
         btn_frame.pack()
         
-        # We pass the preview_text widget to the export functions
         tk.Button(btn_frame, text="Export HTML", command=lambda: self.save_html(preview_text)).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Export Word (.docx)", command=lambda: self.save_docx(preview_text)).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Export RTF (.rtf)", command=lambda: self.save_rtf(preview_text)).pack(side="left", padx=5)
         tk.Button(btn_frame, text="Go Back", command=preview_win.destroy).pack(side="left", padx=5)
 
     def _insert_colored(self, widget, text, color):
-        """Helper to inject text with specific color tags"""
         if color:
             tag = f"c_{color}"
             widget.tag_configure(tag, foreground=color, font=("Courier New", 12, "bold"))
@@ -181,11 +167,9 @@ class MufasaMapper:
 
     # ---------- EXPORT ENGINES ----------
     def _get_segments(self, text_widget):
-        """Translates Tkinter tags to raw text/color tuples for exporting."""
         dump = text_widget.dump("1.0", "end-1c", text=True, tag=True)
         active_color = None
         segments = []
-
         for type_, value, index in dump:
             if type_ == "tagon" and value.startswith("c_"):
                 active_color = value.replace("c_", "")
@@ -198,20 +182,16 @@ class MufasaMapper:
     def save_html(self, text_widget):
         file_path = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML File", "*.html")])
         if not file_path: return
-
         segments = self._get_segments(text_widget)
         html = ["<html><body style='background:#1e1e1e; color:#d4d4d4; padding:20px;'>"]
         html.append("<h3>MUFASA Coverage Map</h3>")
         html.append("<pre style='font-family:\"Courier New\", Courier, monospace; font-size:14px; line-height:1.5;'>")
-
         for text, color in segments:
             if color:
                 html.append(f"<span style='color:{color}; font-weight:bold;'>{text}</span>")
             else:
                 html.append(text)
-
         html.append("</pre></body></html>")
-
         with open(file_path, "w", encoding="utf-8") as f:
             f.write("".join(html))
         webbrowser.open(f"file://{os.path.abspath(file_path)}")
@@ -220,24 +200,19 @@ class MufasaMapper:
         if not HAS_DOCX:
             messagebox.showerror("Missing Library", "Please run 'pip install python-docx'.")
             return
-
         file_path = filedialog.asksaveasfilename(defaultextension=".docx", filetypes=[("Word Document", "*.docx")])
         if not file_path: return
-
         doc = Document()
         section = doc.sections[-1]
         new_w, new_h = section.page_height, section.page_width
         section.orientation = WD_ORIENT.LANDSCAPE
         section.page_width, section.page_height = new_w, new_h
         section.left_margin = section.right_margin = section.top_margin = section.bottom_margin = Inches(0.5)
-
         style = doc.styles['Normal']
         style.font.name = 'Courier New'
         style.font.size = Pt(9)
-        
         p = doc.add_paragraph()
         p.paragraph_format.space_after = Pt(0)
-
         segments = self._get_segments(text_widget)
         for text, color in segments:
             parts = text.split('\n')
@@ -251,18 +226,15 @@ class MufasaMapper:
                 if i < len(parts) - 1:
                     p = doc.add_paragraph()
                     p.paragraph_format.space_after = Pt(0)
-
         doc.save(file_path)
         messagebox.showinfo("Success", "Saved Word Document.")
 
     def save_rtf(self, text_widget):
         file_path = filedialog.asksaveasfilename(defaultextension=".rtf", filetypes=[("Rich Text", "*.rtf")])
         if not file_path: return
-
         segments = self._get_segments(text_widget)
         unique_colors = set(c for t, c in segments if c)
         color_to_idx = {c: i+1 for i, c in enumerate(unique_colors)}
-
         rtf = ["{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fmodern\\fcharset0 Courier New;}}"]
         if unique_colors:
             ctbl = "{\\colortbl;"
@@ -271,10 +243,8 @@ class MufasaMapper:
                 ctbl += f"\\red{r}\\green{g}\\blue{b};"
             ctbl += "}"
             rtf.append(ctbl)
-
         rtf.append("\\landscape\\paperw15840\\paperh12240\\margl720\\margr720\\margt720\\margb720\n")
-        rtf.append("\\f0\\fs18\n") # 9pt font
-
+        rtf.append("\\f0\\fs18\n")
         for text, color in segments:
             text = text.replace('\\', '\\\\').replace('{', '\\{').replace('}', '\\}').replace('\n', '\\par\n')
             if color:
@@ -282,7 +252,6 @@ class MufasaMapper:
                 rtf.append(f"\\cf{idx}\\b {text}\\b0\\cf0 ")
             else:
                 rtf.append(text)
-
         rtf.append("}")
         with open(file_path, "w") as f:
             f.write("".join(rtf))
