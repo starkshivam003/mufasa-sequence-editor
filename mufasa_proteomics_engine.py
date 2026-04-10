@@ -21,7 +21,7 @@ except ImportError:
 class MufasaV4:
     def __init__(self, root):
         self.root = root
-        self.root.title("MUFASA V4 - Dynamic Comparative Proteomics Engine")
+        self.root.title("MUFASA V4.1 - Dynamic Comparative Proteomics Engine")
         self.root.geometry("1100x750")
 
         # --- TOP CONTROL BAR ---
@@ -66,14 +66,19 @@ class MufasaV4:
         self.generate_btn.pack(pady=5, ipadx=20, ipady=5)
 
         self.font_palette = ["#000080", "#800000", "#006400", "#4B0082", "#8B4513", "#2F4F4F"]
-        self.input_cells = [] # Stores references to the text boxes
+        self.input_cells = [] 
 
-        # Initialize default rows
         self.generate_input_rows()
 
-    # ---------- DYNAMIC UI GENERATION ----------
+    # ---------- UI UTILITIES ----------
+    def select_all(self, event):
+        """Fixes the missing Ctrl+A binding in Tkinter text widgets"""
+        event.widget.tag_add(tk.SEL, "1.0", tk.END)
+        event.widget.mark_set(tk.INSERT, "1.0")
+        event.widget.see(tk.INSERT)
+        return 'break'
+
     def generate_input_rows(self):
-        """Clears the canvas and generates exactly N pairs of input boxes."""
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
         
@@ -89,23 +94,27 @@ class MufasaV4:
             row_frame = tk.LabelFrame(self.scrollable_frame, text=f"Sequence Data {i+1}", font=("Arial", 10, "bold"), padx=10, pady=10)
             row_frame.pack(fill="x", pady=5, expand=True)
 
-            # Sequence Input (Left)
             seq_frame = tk.Frame(row_frame)
             seq_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
             tk.Label(seq_frame, text="Paste FASTA (with > header):").pack(anchor="w")
             seq_text = tk.Text(seq_frame, height=6, wrap="word", font=("Courier New", 9))
             seq_text.pack(fill="both", expand=True)
+            # Bind Ctrl+A
+            seq_text.bind("<Control-a>", self.select_all)
+            seq_text.bind("<Command-a>", self.select_all)
 
-            # Peptide Input (Right)
             pep_frame = tk.Frame(row_frame)
             pep_frame.pack(side="right", fill="both", expand=True, padx=(5, 0))
             tk.Label(pep_frame, text="Paste corresponding Peptides:").pack(anchor="w")
             pep_text = tk.Text(pep_frame, height=6, wrap="none", font=("Courier New", 9))
             pep_text.pack(fill="both", expand=True)
+            # Bind Ctrl+A
+            pep_text.bind("<Control-a>", self.select_all)
+            pep_text.bind("<Command-a>", self.select_all)
 
             self.input_cells.append({"seq_widget": seq_text, "pep_widget": pep_text})
 
-    # ---------- NEW: TABBED HELP & MANUAL ----------
+    # ---------- TABBED HELP & MANUAL ----------
     def show_help_manual(self):
         help_win = tk.Toplevel(self.root)
         help_win.title("MUFASA Help Center")
@@ -114,31 +123,29 @@ class MufasaV4:
         notebook = ttk.Notebook(help_win)
         notebook.pack(expand=True, fill="both", padx=10, pady=10)
 
-        # TAB 1: User Manual
         manual_frame = tk.Frame(notebook, bg="#F5F5F5")
         notebook.add(manual_frame, text="User Manual")
         
         manual_text = tk.Text(manual_frame, wrap="word", font=("Arial", 10), padx=10, pady=10, bg="#F5F5F5")
         manual_text.pack(expand=True, fill="both")
         
-        manual_content = """MUFASA V4 - User Guide
+        manual_content = """MUFASA V4.1 - User Guide
 
 1. SETTING UP YOUR WORKSPACE
-At the top left, enter the number of sequences you want to analyze and click "Generate Input Rows". The software will create distinct boxes for each sequence. This 1:1 mapping prevents peptide cross-contamination.
+At the top left, enter the number of sequences you want to analyze and click "Generate Input Rows". This 1:1 mapping prevents peptide cross-contamination.
 
 2. ENTERING DATA
-- Left Box (FASTA): Paste your full FASTA sequence here. It MUST include the header line starting with '>' (e.g., >Sequence_1).
-- Right Box (Peptides): Paste your column of peptides. Brackets, weights, and cleavage dots (e.g., K.A[+80]SD.R) will be automatically cleaned by the software.
+- Left Box (FASTA): Paste your full sequence here. It MUST include the header line starting with '>' (e.g., >Sequence_1).
+- Right Box (Peptides): Paste your column of peptides.
 
 3. CHOOSING AN ALIGNMENT MODE
-- Run MAFFT: Choose this if you pasted raw sequences. MUFASA will use your local CPU to perfectly align them and dynamically shift your peptide coordinates to match the gaps. (Requires MAFFT installed).
-- Pre-Aligned: Choose this if you already aligned your sequences online. MUFASA will skip MAFFT and map peptides directly onto the gaps you provided.
+- Run MAFFT: Choose this if you pasted raw sequences. MUFASA will use your local CPU to dynamically shift peptide coordinates to match MAFFT gaps. (Requires MAFFT installed).
+- Pre-Aligned: Choose this if you already aligned your sequences online.
 
 4. REVERSE MODE
-Check the box at the bottom to flip the logic. Mapped areas will be hidden, and gaps (missing coverage) will be highlighted in bright red.
+Mappped areas will be hidden, and missing coverage will be highlighted in bright red.
 
 5. THE DEPTH HEATMAP
-MUFASA automatically calculates overlapping coverage.
 - Single Coverage = Standard text color.
 - Double Coverage = Soft Yellow background.
 - Triple Coverage = Soft Orange background.
@@ -146,7 +153,6 @@ MUFASA automatically calculates overlapping coverage.
         manual_text.insert(tk.END, manual_content)
         manual_text.config(state=tk.DISABLED)
 
-        # TAB 2: MAFFT Setup
         setup_frame = tk.Frame(notebook, bg="#F5F5F5")
         notebook.add(setup_frame, text="MAFFT Installation")
         
@@ -177,15 +183,13 @@ MUFASA automatically calculates overlapping coverage.
         return re.sub(r'[^a-zA-Z]', '', pep).upper()
 
     def extract_data_from_ui(self):
-        """Reads the dynamic cells and builds the sequence/peptide dictionaries."""
         parsed_data = []
         for index, cell in enumerate(self.input_cells):
             raw_fasta = cell["seq_widget"].get("1.0", tk.END).strip()
             raw_peps = cell["pep_widget"].get("1.0", tk.END).strip().split('\n')
             
-            if not raw_fasta: continue # Skip completely empty rows
+            if not raw_fasta: continue 
             
-            # Extract header and raw string from FASTA
             lines = raw_fasta.split('\n')
             header = f"Seq_{index+1}"
             seq_lines = []
@@ -198,7 +202,6 @@ MUFASA automatically calculates overlapping coverage.
                     
             raw_seq = "".join(seq_lines).upper()
             
-            # Clean peptides specific to THIS sequence
             peptides = list(set(filter(None, [self.clean_peptide(p) for p in raw_peps])))
             peptides.sort(key=len)
             
@@ -229,7 +232,6 @@ MUFASA automatically calculates overlapping coverage.
     # ---------- MATHEMATICAL CORE ----------
     def run_heavy_math(self, parsed_data):
         try:
-            # 1. Alignment
             if self.align_mode.get() == "RAW" and len(parsed_data) > 1:
                 aligned_seqs = self.run_mafft(parsed_data)
             else:
@@ -238,13 +240,11 @@ MUFASA automatically calculates overlapping coverage.
             processed_data = []
             total_unmapped = 0
 
-            # 2. 1:1 Coordinate Shift
             for i, seq_obj in enumerate(parsed_data):
                 aligned_seq = aligned_seqs[i]
                 raw_seq = aligned_seq.replace('-', '') 
                 peptides = seq_obj['peptides']
                 
-                # Search peptides ONLY against their specific parent sequence
                 raw_fgs, raw_bgs, found_peps = self.map_peptides(raw_seq, peptides)
                 total_unmapped += (len(peptides) - len(found_peps))
 
@@ -258,7 +258,6 @@ MUFASA automatically calculates overlapping coverage.
                     aligned_fgs[algn_idx] = raw_fgs[raw_idx]
                     aligned_bgs[algn_idx] = raw_bgs[raw_idx]
 
-                    # Gap coloring math
                     if raw_idx < len(raw_seq) - 1:
                         next_algn_idx = bridge[raw_idx + 1]
                         if next_algn_idx > algn_idx + 1: 
@@ -355,14 +354,16 @@ MUFASA automatically calculates overlapping coverage.
 
     def open_preview_window(self, processed_data, total_unmapped):
         preview_win = tk.Toplevel(self.root)
-        preview_win.title("MUFASA V4 - Comparative Map")
+        preview_win.title("MUFASA V4.1 - Comparative Map")
         preview_win.geometry("1000x750")
 
         if total_unmapped > 0 and not self.reverse_mode.get():
-            tk.Label(preview_win, text=f"⚠️ {total_unmapped} peptides could not be mapped to their specific sequences.", fg="#D32F2F", font=("Arial", 10, "bold")).pack(pady=5)
+            tk.Label(preview_win, text=f"⚠️ {total_unmapped} peptides could not be mapped.", fg="#D32F2F", font=("Arial", 10, "bold")).pack(pady=5)
 
         preview_text = tk.Text(preview_win, wrap="none", font=("Courier New", 11), bg="#FAFAFA")
         preview_text.pack(expand=True, fill="both", padx=10, pady=5)
+        preview_text.bind("<Control-a>", self.select_all)
+        preview_text.bind("<Command-a>", self.select_all)
 
         chunk_size = 60
         total_length = len(processed_data[0]["aligned"])
@@ -399,9 +400,13 @@ MUFASA automatically calculates overlapping coverage.
 
         preview_text.config(state=tk.DISABLED)
 
+        # Action Bar with all Export Options
         btn_frame = tk.Frame(preview_win, pady=10)
         btn_frame.pack()
         tk.Button(btn_frame, text="Export HTML", command=lambda: self.save_html(preview_text)).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Export Word (.docx)", command=lambda: self.save_docx(preview_text)).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Export RTF (.rtf)", command=lambda: self.save_rtf(preview_text)).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Close", command=preview_win.destroy).pack(side="left", padx=5)
 
     def _insert_styled(self, widget, text, fg, bg):
         fg_str = fg if fg else "NONE"
@@ -413,30 +418,132 @@ MUFASA automatically calculates overlapping coverage.
         widget.tag_configure(tag, **kwargs)
         widget.insert(tk.END, text, tag)
 
-    def save_html(self, text_widget):
-        file_path = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML File", "*.html")])
-        if not file_path: return
+    # ---------- FILE EXPORT ENGINES ----------
+    def _extract_segments(self, text_widget):
+        """Translates Tkinter tags back to raw hex codes for file exports"""
         dump = text_widget.dump("1.0", "end-1c", text=True, tag=True)
-        html = ["<html><body style='background:#ffffff; padding:20px;'><pre style='font-family:\"Courier New\"; font-size:14px;'>"]
-        
-        active_fg, active_bg = None, None
+        active_fg = None
+        active_bg = None
+        segments = []
+
         for type_, value, index in dump:
             if type_ == "tagon" and value.startswith("style|"):
                 parts = value.split("|")
                 active_fg = parts[1] if parts[1] != "NONE" else None
                 active_bg = parts[2] if parts[2] != "NONE" else None
             elif type_ == "tagoff" and value.startswith("style|"):
-                active_fg, active_bg = None, None
+                active_fg = None
+                active_bg = None
             elif type_ == "text":
-                style = ""
-                if active_fg: style += f"color:{active_fg}; font-weight:bold; "
-                if active_bg: style += f"background-color:{active_bg}; "
-                if style: html.append(f"<span style='{style}'>{value}</span>")
-                else: html.append(value)
+                segments.append((value, active_fg, active_bg))
+        return segments
+
+    def save_html(self, text_widget):
+        file_path = filedialog.asksaveasfilename(defaultextension=".html", filetypes=[("HTML File", "*.html")])
+        if not file_path: return
+        
+        segments = self._extract_segments(text_widget)
+        html = ["<html><body style='background:#ffffff; padding:20px;'><pre style='font-family:\"Courier New\"; font-size:14px; line-height:1.8;'>"]
+        
+        for text, fg, bg in segments:
+            style = ""
+            if fg: style += f"color:{fg}; font-weight:bold; "
+            if bg: style += f"background-color:{bg}; "
+            
+            if style: html.append(f"<span style='{style}'>{text}</span>")
+            else: html.append(text)
 
         html.append("</pre></body></html>")
         with open(file_path, "w", encoding="utf-8") as f: f.write("".join(html))
         webbrowser.open(f"file://{os.path.abspath(file_path)}")
+
+    def save_docx(self, text_widget):
+        if not HAS_DOCX:
+            messagebox.showerror("Missing Library", "Please run 'pip install python-docx' to enable Word export.")
+            return
+
+        file_path = filedialog.asksaveasfilename(defaultextension=".docx", filetypes=[("Word Document", "*.docx")])
+        if not file_path: return
+
+        bg_to_highlight = {
+            "#FFF9C4": WD_COLOR_INDEX.YELLOW,
+            "#FFE0B2": WD_COLOR_INDEX.DARK_YELLOW, 
+            "#FFCDD2": WD_COLOR_INDEX.PINK
+        }
+
+        doc = Document()
+        section = doc.sections[-1]
+        new_w, new_h = section.page_height, section.page_width
+        section.orientation = WD_ORIENT.LANDSCAPE
+        section.page_width, section.page_height = new_w, new_h
+        section.left_margin = section.right_margin = section.top_margin = section.bottom_margin = Inches(0.5)
+
+        style = doc.styles['Normal']
+        style.font.name = 'Courier New'
+        style.font.size = Pt(9)
+        
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(0)
+
+        segments = self._extract_segments(text_widget)
+        for text, fg, bg in segments:
+            parts = text.split('\n')
+            for i, part in enumerate(parts):
+                if part:
+                    run = p.add_run(part)
+                    if fg:
+                        run.font.color.rgb = RGBColor(int(fg[1:3], 16), int(fg[3:5], 16), int(fg[5:7], 16))
+                        run.font.bold = True
+                    if bg and bg in bg_to_highlight:
+                        run.font.highlight_color = bg_to_highlight[bg]
+                
+                if i < len(parts) - 1:
+                    p = doc.add_paragraph()
+                    p.paragraph_format.space_after = Pt(0)
+
+        doc.save(file_path)
+        messagebox.showinfo("Success", "Saved Word Document successfully.")
+
+    def save_rtf(self, text_widget):
+        file_path = filedialog.asksaveasfilename(defaultextension=".rtf", filetypes=[("Rich Text", "*.rtf")])
+        if not file_path: return
+
+        segments = self._extract_segments(text_widget)
+        
+        unique_fgs = set(fg for t, fg, bg in segments if fg)
+        unique_bgs = set(bg for t, fg, bg in segments if bg)
+        
+        color_tbl_list = list(unique_fgs) + list(unique_bgs)
+        color_idx = {c: i+1 for i, c in enumerate(color_tbl_list)}
+
+        rtf = ["{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\fmodern\\fcharset0 Courier New;}}"]
+        
+        if color_tbl_list:
+            ctbl = "{\\colortbl;"
+            for c in color_tbl_list:
+                r, g, b = int(c[1:3], 16), int(c[3:5], 16), int(c[5:7], 16)
+                ctbl += f"\\red{r}\\green{g}\\blue{b};"
+            ctbl += "}"
+            rtf.append(ctbl)
+
+        rtf.append("\\landscape\\paperw15840\\paperh12240\\margl720\\margr720\\margt720\\margb720\n")
+        rtf.append("\\f0\\fs18\n")
+
+        for text, fg, bg in segments:
+            text = text.replace('\\', '\\\\').replace('{', '\\{').replace('}', '\\}').replace('\n', '\\par\n')
+            
+            style_cmd = ""
+            if bg: style_cmd += f"\\highlight{color_idx[bg]}"
+            if fg: style_cmd += f"\\cf{color_idx[fg]}\\b "
+            
+            if style_cmd:
+                rtf.append(f"{{{style_cmd} {text}}}")
+            else:
+                rtf.append(text)
+
+        rtf.append("}")
+        with open(file_path, "w") as f: f.write("".join(rtf))
+        messagebox.showinfo("Success", "Saved RTF successfully.")
 
 if __name__ == "__main__":
     root = tk.Tk()
