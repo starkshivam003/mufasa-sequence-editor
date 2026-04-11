@@ -2,7 +2,7 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 # MUFASA V4.0: Dynamic Comparative Proteomics Engine
 
-**MUFASA (Multiple FASTA Sequence Alignment & Structuring Application)** is a professional-grade desktop application designed for proteomics researchers and structural biologists.
+**MUFASA (Molecular Utility For Annotating Sequence Alignments)** is a professional-grade desktop application designed for proteomics researchers and structural biologists.
 
 It bridges the gap between **mass spectrometry peptide output** and **multiple sequence alignment (MSA)** by providing high-confidence visual heatmaps of peptide coverage across multiple homologous proteins.
 
