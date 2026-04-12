@@ -21,8 +21,8 @@ except ImportError:
 class MufasaV4:
     def __init__(self, root):
         self.root = root
-        self.root.title("MUFASA V4.1 - Dynamic Comparative Proteomics Engine")
-        self.root.geometry("1100x750")
+        # self.root.title("MUFASA V4.1 - Dynamic Comparative Proteomics Engine")
+        # self.root.geometry("1100x750")
 
         # --- TOP CONTROL BAR ---
         top_frame = tk.Frame(root, padx=10, pady=10, bg="#E0E0E0")

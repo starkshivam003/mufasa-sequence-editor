@@ -14,8 +14,8 @@ except ImportError:
 class SequenceNotepad:
     def __init__(self, root):
         self.root = root
-        self.root.title("Sequence Highlighter")
-        self.root.geometry("1200x800")
+        # self.root.title("Sequence Highlighter")
+        # self.root.geometry("1200x800")
         # Text area setup (Courier font ensures alignments are visible while editing)
         self.text = tk.Text(root, wrap="none", undo=True, font=("Courier New", 12))
         self.text.pack(expand=1, fill="both")
@@ -28,8 +28,11 @@ class SequenceNotepad:
         scroll_x.pack(side="bottom", fill="x")
 
         # Menu
-        menu = tk.Menu(root)
-        root.config(menu=menu)
+        # menu = tk.Menu(root)
+        # root.config(menu=menu)
+        top_level = root.winfo_toplevel() 
+        menu = tk.Menu(top_level)
+        top_level.config(menu=menu)
 
         # File menu
         file_menu = tk.Menu(menu, tearoff=0)
