@@ -102,9 +102,7 @@ MUFASA is a **Python-based GUI application**.
 ### Windows
 
 1. Download from: https://mafft.cbrc.jp/alignment/software/  
-2. Extract to:
-
-    C:\Program Files\mafft
+2. Extract to: `C:\Program Files\mafft`
 
 3. Add MAFFT `bat` folder to **System PATH**
 
@@ -124,6 +122,16 @@ MUFASA is a **Python-based GUI application**.
 ---
 
 ## How to Use
+
+### Unified Interface
+
+Run:
+
+    python mufasa_main.py
+
+This launches a tabbed interface that integrates both the proteomics engine and the sequence editor into a single application.
+
+---
 
 ### Main Proteomics Engine
 
