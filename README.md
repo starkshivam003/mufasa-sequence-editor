@@ -14,7 +14,7 @@ Standard text editors and alignment tools are not built for mass spectrometry da
 
 When searching hundreds of peptides against multiple sequences, traditional scripts often suffer from:
 
-- ❌ **Cross-contamination**
+- **Cross-contamination**
   - A peptide from Sample A falsely maps to Sequence B due to random matches
 
 ### MUFASA V4 Solution
