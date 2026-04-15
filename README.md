@@ -7,6 +7,14 @@
 It bridges the gap between **mass spectrometry peptide output** and **multiple sequence alignment (MSA)** by providing high-confidence visual heatmaps of peptide coverage across multiple homologous proteins.
 
 ---
+## Table of Contents
+- [Why MUFASA?](#why-mufasa)
+- [Key Features](#key-features)
+- [Installation & Setup](#installation--setup)
+- [MAFFT Installation](#mafft-installation-required-for-local-alignment)
+- [How to Use](#how-to-use)
+- [Architecture Notes](#architecture-notes)
+---
 
 ## Why MUFASA?
 
@@ -23,6 +31,7 @@ When searching hundreds of peptides against multiple sequences, traditional scri
 - Isolates sequence-to-peptide searches
 - Calculates coordinate shifts caused by alignment gaps (`-`)
 - Produces **stacked, publication-ready heatmaps**
+
 
 ---
 
