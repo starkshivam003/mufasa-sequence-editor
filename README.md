@@ -206,3 +206,9 @@ Automatically adapts instructions for:
 - Linux / WSL  
 
 ---
+## Roadmap
+Future updates planned for the MUFASA engine:
+- **Project Saving:** Ability to save and load workspace states (sequences and mapped peptides).
+- **Export Options:** Direct export to high-resolution PDF for publications.
+- **Advanced Alignment:** Potential integration of local pairwise alignment algorithms.
+- **Data Export:** Export heatmap raw depth data directly to CSV.
