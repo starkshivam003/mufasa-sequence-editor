@@ -206,6 +206,11 @@ Automatically adapts instructions for:
 - Linux / WSL  
 
 ---
+## Acknowledgements
+MUFASA relies on the mathematical backend of MAFFT for multiple sequence alignments. If you use the MAFFT integration in your research, please ensure you cite their work:
+* Katoh, Standley 2013 ([Molecular Biology and Evolution 30:772-780](https://doi.org/10.1093/molbev/mst010))
+* [MAFFT Official Website](https://mafft.cbrc.jp/alignment/software/)
+---
 ## Roadmap
 Future updates planned for the MUFASA engine:
 - **Project Saving:** Ability to save and load workspace states (sequences and mapped peptides).
