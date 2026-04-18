@@ -105,6 +105,14 @@ MUFASA is a **Python-based GUI application**.
 > Note: `python-docx` is required for Word export.
 
 ---
+## Troubleshooting
+**Error: "MAFFT not found" on Windows**
+* Ensure you extracted MAFFT to `C:\Program Files\mafft`.
+* You MUST add the `bat` sub-folder inside the MAFFT directory to your System PATH Environment Variables. Restart your terminal/computer after doing this.
+
+**Running on WSL (Windows Subsystem for Linux)**
+* If you run MUFASA inside WSL, it operates as a Linux application. You must install the Linux version of MAFFT via `sudo apt-get install mafft` inside your WSL terminal, even if you already installed the Windows `.exe`.
+---
 
 ## MAFFT Installation (Required for Local Alignment)
 
