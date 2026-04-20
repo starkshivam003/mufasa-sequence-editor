@@ -15,6 +15,8 @@ It bridges the gap between **mass spectrometry peptide output** and **multiple s
 - [MAFFT Installation](#mafft-installation-required-for-local-alignment)
 - [How to Use](#how-to-use)
 - [Architecture Notes](#architecture-notes)
+- [Acknowledgement](#acknowledgements)
+- [Roadmap](#roadmap)
 ---
 
 ## Why MUFASA?
