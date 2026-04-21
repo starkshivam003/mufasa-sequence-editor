@@ -228,3 +228,4 @@ Future updates planned for the MUFASA engine:
 - **Export Options:** Direct export to high-resolution PDF for publications.
 - **Advanced Alignment:** Potential integration of local pairwise alignment algorithms.
 - **Data Export:** Export heatmap raw depth data directly to CSV.
+- **FTIR Data Analysis:** Directly analyse the FTIR data.
