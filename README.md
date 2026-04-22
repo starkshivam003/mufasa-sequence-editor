@@ -201,7 +201,8 @@ Run:
 
 ## Performance Design
 
-- Handles **O(N²)** alignment complexity efficiently  
+- Handles **O(N²)** alignment complexity efficiently 
+- MAFFT handles with **N(logN)** complexity 
 - Runs heavy tasks asynchronously  
 
 ---
